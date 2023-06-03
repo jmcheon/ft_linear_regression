@@ -22,11 +22,14 @@ def predict_(x, thetas):
 	return np.array(y_hat)
 
 if __name__ == "__main__":
-	# Train the model on training set
+	# Train the model
 	thetas = train_model()
 	print(f"denormalized thetas: {thetas}, {thetas.shape}")
 
 	# Predict
-	km = float(input("\nType a Km to estimate price: "))
-	estimated_price = int(predict_(np.array(km).reshape(-1, 1), thetas))
-	print(f"Estimated price for km: {km} is {estimated_price}.")
+	km = input("\nType a Km to estimate price: ")
+	if km.isdigit():
+		estimated_price = int(predict_(np.array(float(km)).reshape(-1, 1), thetas))
+		print(f"Estimated price for km: {km} is {estimated_price}.")
+	else:
+		print(f"Invalid input: {km}, integer value required.")
