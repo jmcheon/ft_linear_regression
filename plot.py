@@ -1,33 +1,9 @@
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+import imageio
 from sklearn.model_selection import train_test_split
-
-def load_data():
-	try:
-		data = pd.read_csv("data.csv")
-	except:
-		print("Invalid file error.")
-		sys.exit()
-	print("data shape:", data.shape)
-	columns = data.columns.tolist()
-
-	# Normalization
-	data_min = np.min(data, axis=0)
-	data_max = np.max(data, axis=0)
-	normalized_data = (data - data_min) / (data_max - data_min)
-	#return (normalized_data.values, columns[0], columns[1])
-	return (data.values, columns[0], columns[1])
-
-def normalization(data):
-	data_min = np.min(data, axis=0)
-	data_max = np.max(data, axis=0)
-	normalized_data = (data - data_min) / (data_max - data_min)
-	return normalized_data, data_min, data_max
-
-def denormalization(normalized_data, data_min, data_max):
-	denormalized_data = normalized_data * (data_max - data_min) + data_min
-	return denormalized_data
+from fit import train_model, fit_, load_data, normalization, denormalization
+from prediction import predict_
 
 def plot_scatter(data, feature, target):
 	plt.scatter(data[:, 0], data[:, 1])
@@ -62,103 +38,40 @@ def plot_scatter_with_prediction(data, x_test, y_pred, feature, target):
 	plt.xlabel(feature)
 	plt.ylabel(target)
 	plt.legend()
-	plt.show()
+	#plt.show()
+	return plt
 
-def fit_(x, y, thetas, alpha, max_iter):
-	for v in [x, y, thetas]:
-		if not isinstance(v, np.ndarray):
-			print(f"Invalid input: argument {v} of ndarray type required")
-			return None
+def create_animated_gif(data, feature, target, num_steps, filename='scatter_regression.gif'):
+	normalized_data, data_min, data_max = normalization(data)
+	images = []
+	print("Creating an animated gif image...")
+	for i in range(1, num_steps + 1):
+		partial_x = normalized_data[:i, 0].reshape(-1, 1)
+		partial_y = normalized_data[:i, 1].reshape(-1, 1)
+		thetas = np.zeros((2, 1)).reshape(-1, 1)
 
-	if not x.ndim == 2:
-		print(f"Invalid input: wrong shape of x", x.shape)
-		return None
+		new_thetas = fit_(partial_x, partial_y, thetas, alpha=1e-2, max_iter=5000)
+		y_pred = predict_(partial_x, new_thetas)
 
-	if y.ndim == 1:
-		y = y.reshape(y.size, 1)
-	elif not (y.ndim == 2 and y.shape[1] == 1):
-		print(f"Invalid input: wrong shape of y", y.shape)
-		return None
-	
-	if x.shape[0] != y.shape[0]:
-		print(f"Invalid input: x, y matrices should be compatible.")
-		return None
+		denormalized_partial_x = denormalization(partial_x.reshape(-1 ,1), data_min[0], data_max[0])
+		denormalized_y_pred = denormalization(y_pred.reshape(-1, 1), data_min[-1], data_max[-1])
 
-	if thetas.ndim == 1 and thetas.size == x.shape[1] + 1:
-		thetas = thetas.reshape(x.shape[1] + 1, 1)
-	elif not (thetas.ndim == 2 and thetas.shape == (x.shape[1] + 1, 1)):
-		print(f"Invalid input: wrong shape of {thetas}", thetas.shape)
-		return None
-
-	if not isinstance(alpha, float) or alpha <= 0:
-		print(f"Invalid input: argument alpha of positive float type required")	
-		return False
-
-	if not isinstance(max_iter, int) or max_iter <= 0:
-		print(f"Invalid input: argument max_iter of positive integer type required")	
-		return False 
-
-	# Weights to update: alpha * mean((y_hat - y) * x) 
-	# Bias to update: alpha * mean(y_hat - y)
-	X = np.hstack((np.ones((x.shape[0], 1)), x))
-	new_theta = np.copy(thetas.astype("float64"))
-	for _ in range(max_iter):
-		y_hat = X.dot(new_theta)
-		# Compute gradient descent
-		w_grad = np.mean((y_hat - y) * x)
-		b_grad = np.mean(y_hat - y)
-		grad = np.array([b_grad, w_grad]).reshape(-1, 1)
-	        # Handle invalid values in the gradient
-		if np.any(np.isnan(grad)) or np.any(np.isinf(grad)):
-			#print("Warning: Invalid values encountered in the gradient. Skipping update.")
-			continue
-		# Update new_theta
-		new_theta -= (alpha * grad)
-	thetas = new_theta
-	return thetas
-
-def predict_(x, thetas):
-	for v in [x, thetas]:
-		if not isinstance(v, np.ndarray):
-			print(f"Invalid input: argument {v} of ndarray type required")
-			return None
-
-	if not x.ndim == 2:
-		print("Invalid input: wrong shape of x", x.shape)
-		return None
-
-	if thetas.ndim == 1 and thetas.size == x.shape[1] + 1:
-		thetas = thetas.reshape(x.shape[1] + 1, 1)
-	elif not (thetas.ndim == 2 and thetas.shape == (x.shape[1] + 1, 1)):
-		print(f"p Invalid input: wrong shape of {thetas}", thetas.shape)
-		return None
-	
-	X = np.hstack((np.ones((x.shape[0], 1)), x))
-	y_hat = X.dot(thetas)
-	return np.array(y_hat)
-
-def train(data, data_min, data_max):
-	print(f"Starting training for linear regression...")
-	x_train, x_test, y_train, y_test = train_test_split(data[:, 0], data[:, 1], test_size=0.2, random_state=42)
-	thetas = np.zeros((2, 1))
-	new_thetas = fit_(x_train.reshape(-1, 1), y_train.reshape(-1, 1), thetas, alpha=1e-2, max_iter=5000)
-	print("thetas(original):", thetas)
-	print("thetas(optimized):", new_thetas)
+		fig = plot_scatter_with_prediction(data, denormalized_partial_x, denormalized_y_pred, feature, target)
+		plt.title(f'theta:{new_thetas}')
+		
+		# Call save to create temporary image file.
+		temp_img_file = f'temp_{i}.png'
+		fig.savefig(temp_img_file)
+		plt.close()
+		
+		images.append(imageio.imread(temp_img_file))
+	imageio.mimsave(filename, images, duration=0.5)
 	return new_thetas
 
-def get_prediction_data(thetas, data, data_min, data_max):
-	x_train, x_test, y_train, y_test = train_test_split(data[:, 0], data[:, 1], test_size=0.2, random_state=42)
-	y_pred = predict_(x_test.reshape(-1, 1), thetas)
-	denormalized_x_test = denormalization(x_test.reshape(-1 ,1), data_min, data_max)
-	denormalized_y_pred = denormalization(y_pred.reshape(-1, 1), data_min[-1], data_max[-1])
-
-	# Sort the denormalized test data by the feature values
-	sorted_indices = np.argsort(denormalized_x_test[:, 0])
-	sorted_x_test = denormalized_x_test[sorted_indices, 0]
-	sorted_predictions = denormalized_y_pred[sorted_indices]
-	#print("prediction:", y_pred)
-	#plot_scatter_with_prediction(denormalization(data, data_min, data_max), sorted_features, sorted_predictions, feature, target)
-	return sorted_x_test, sorted_predictions
+def r2_score(data, thetas):
+	x = data[:, 0]
+	y = data[:, 1]
+	ssm = np.sum(y - np.average(y))
 
 if __name__ == "__main__":
 	# Load the data
@@ -166,7 +79,7 @@ if __name__ == "__main__":
 
 	# Normalization
 	normalized_data, data_min, data_max = normalization(data)
-	print(f"data_min:{data_min}, data_max:{data_max}")
+	#print(f"data_min:{data_min}, data_max:{data_max}")
 	denormalized_data = denormalization(normalized_data, data_min, data_max)
 
 	# Plot data scatters 
@@ -174,34 +87,13 @@ if __name__ == "__main__":
 	#plot_scatters_for_normalization(data, normalized_data, denormalized_data, feature, target)
 
 	# Train the model on training set
-	thetas = train(normalized_data, data_min, data_max)
+	thetas = train_model()
 
 	# Predict on test set
-	#x_test, predictions = get_prediction_data(thetas, normalized_data, data_min, data_max)
-	x_train, x_test, y_train, y_test = train_test_split(normalized_data[:, 0], normalized_data[:, 1], test_size=0.2, random_state=42)
-	print(f"x test:{x_test}")
+	x_train, x_test, y_train, y_test = train_test_split(data[:, 0], data[:, 1], test_size=0.2, random_state=42)
 	y_pred = predict_(x_test.reshape(-1, 1), thetas)
-	denormalized_x_test = denormalization(x_test.reshape(-1 ,1), data_min[0], data_max[0])
-	denormalized_y_pred = denormalization(y_pred.reshape(-1, 1), data_min[-1], data_max[-1])
-	print(f"de x test:{denormalized_x_test}")
-	print(f"de y pred:{denormalized_y_pred}")
-
-	print(f"thetas[0]:{thetas[0]}")
-	print(f"thetas[1]:{thetas[1]}")
-	denormalized_thetas = denormalization(thetas, data_min[-1], data_max[-1])
-	print(f"de thetas[0]:{denormalized_thetas[0]}")
-	print(f"de thetas[1]:{denormalized_thetas[1]}")
-	km = float(input("Type a Km for estimated price for it.:"))
-	normalized_km = (km- data_min[0]) / (data_max[0] - data_min[0])
-	print(f"nor km:{normalized_km}")
-	#estimated_price = predict_(np.array(km).reshape(-1, 1), denormalized_thetas) 
-	#estimated_price = float(denormalized_thetas[0]) + float(denormalized_thetas[1]) * km
-	estimated_price = float(thetas[0]) + float(thetas[1]) * normalized_km
-	#estimated_price = predict_(np.array(normalized_km).reshape(-1, 1), thetas) 
-	print(f"estimated price for km: {km} is {estimated_price}.")
-	estimated_price = denormalization(estimated_price, data_min[-1], data_max[-1])
-	print(f"estimated price for km: {km} is {estimated_price}.")
 
 	# Plot the scatter and prediction line
-	#plot_scatter_with_prediction(data, x_test, y_pred, feature, target)
-	plot_scatter_with_prediction(data, denormalized_x_test, denormalized_y_pred, feature, target)
+	plt = plot_scatter_with_prediction(data, x_test, y_pred, feature, target)
+	plt.show()
+	create_animated_gif(data, feature, target, num_steps=len(data[:, 0]))
