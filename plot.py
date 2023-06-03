@@ -29,6 +29,41 @@ def denormalization(normalized_data, data_min, data_max):
 	denormalized_data = normalized_data * (data_max - data_min) + data_min
 	return denormalized_data
 
+def plot_scatter(data, feature, target):
+	plt.scatter(data[:, 0], data[:, 1])
+	plt.title(f'Scatter Plot: {feature} vs {target}')
+	plt.xlabel(feature)
+	plt.ylabel(target)
+	plt.show()
+
+def plot_scatters_for_normalization(data, normalized_data, denormalized_data, feature, target):
+	fig, axes = plt.subplots(1, 3, figsize=(15, 8))
+	axes[0].scatter(data[:, 0], data[:, 1])
+	axes[0].set_title(f'Scatter Plot(data): {feature} vs {target}')
+	axes[0].set_xlabel(feature)
+	axes[0].set_ylabel(target)
+	axes[0].grid()
+	axes[1].scatter(normalized_data[:, 0], normalized_data[:, 1])
+	axes[1].set_title(f'Scatter Plot(normalized): {feature} vs {target}')
+	axes[1].set_xlabel(feature)
+	axes[1].set_ylabel(target)
+	axes[1].grid()
+	axes[2].scatter(denormalized_data[:, 0], denormalized_data[:, 1])
+	axes[2].set_title(f'Scatter Plot(denormalized): {feature} vs {target}')
+	axes[2].set_xlabel(feature)
+	axes[2].set_ylabel(target)
+	axes[2].grid()
+	plt.show()
+
+def plot_scatter_with_prediction(data, x_test, y_pred, feature, target):
+	plt.scatter(data[:, 0], data[:, 1], label='data')
+	plt.plot(x_test, y_pred, c='orange', label='prediction line')
+	plt.title(f'Scatter Plot: {feature} vs {target}')
+	plt.xlabel(feature)
+	plt.ylabel(target)
+	plt.legend()
+	plt.show()
+
 def fit_(x, y, thetas, alpha, max_iter):
 	for v in [x, y, thetas]:
 		if not isinstance(v, np.ndarray):
@@ -111,20 +146,62 @@ def train(data, data_min, data_max):
 	print("thetas(optimized):", new_thetas)
 	return new_thetas
 
+def get_prediction_data(thetas, data, data_min, data_max):
+	x_train, x_test, y_train, y_test = train_test_split(data[:, 0], data[:, 1], test_size=0.2, random_state=42)
+	y_pred = predict_(x_test.reshape(-1, 1), thetas)
+	denormalized_x_test = denormalization(x_test.reshape(-1 ,1), data_min, data_max)
+	denormalized_y_pred = denormalization(y_pred.reshape(-1, 1), data_min[-1], data_max[-1])
+
+	# Sort the denormalized test data by the feature values
+	sorted_indices = np.argsort(denormalized_x_test[:, 0])
+	sorted_x_test = denormalized_x_test[sorted_indices, 0]
+	sorted_predictions = denormalized_y_pred[sorted_indices]
+	#print("prediction:", y_pred)
+	#plot_scatter_with_prediction(denormalization(data, data_min, data_max), sorted_features, sorted_predictions, feature, target)
+	return sorted_x_test, sorted_predictions
+
 if __name__ == "__main__":
 	# Load the data
 	data, feature, target = load_data()
 
 	# Normalization
 	normalized_data, data_min, data_max = normalization(data)
+	print(f"data_min:{data_min}, data_max:{data_max}")
 	denormalized_data = denormalization(normalized_data, data_min, data_max)
+
+	# Plot data scatters 
+	#plot_scatter(data, feature, target)
+	#plot_scatters_for_normalization(data, normalized_data, denormalized_data, feature, target)
 
 	# Train the model on training set
 	thetas = train(normalized_data, data_min, data_max)
 
-	# Predict
-	km = input("\nType a Km for estimated price for it: ")
-	normalized_km = (float(km) - data_min[0]) / (data_max[0] - data_min[0])
-	estimated_price = predict_(np.array(normalized_km).reshape(-1, 1), thetas) 
-	estimated_price = int(denormalization(estimated_price, data_min[-1], data_max[-1]))
-	print(f"Estimated price for km: {km} is {estimated_price}.")
+	# Predict on test set
+	#x_test, predictions = get_prediction_data(thetas, normalized_data, data_min, data_max)
+	x_train, x_test, y_train, y_test = train_test_split(normalized_data[:, 0], normalized_data[:, 1], test_size=0.2, random_state=42)
+	print(f"x test:{x_test}")
+	y_pred = predict_(x_test.reshape(-1, 1), thetas)
+	denormalized_x_test = denormalization(x_test.reshape(-1 ,1), data_min[0], data_max[0])
+	denormalized_y_pred = denormalization(y_pred.reshape(-1, 1), data_min[-1], data_max[-1])
+	print(f"de x test:{denormalized_x_test}")
+	print(f"de y pred:{denormalized_y_pred}")
+
+	print(f"thetas[0]:{thetas[0]}")
+	print(f"thetas[1]:{thetas[1]}")
+	denormalized_thetas = denormalization(thetas, data_min[-1], data_max[-1])
+	print(f"de thetas[0]:{denormalized_thetas[0]}")
+	print(f"de thetas[1]:{denormalized_thetas[1]}")
+	km = float(input("Type a Km for estimated price for it.:"))
+	normalized_km = (km- data_min[0]) / (data_max[0] - data_min[0])
+	print(f"nor km:{normalized_km}")
+	#estimated_price = predict_(np.array(km).reshape(-1, 1), denormalized_thetas) 
+	#estimated_price = float(denormalized_thetas[0]) + float(denormalized_thetas[1]) * km
+	estimated_price = float(thetas[0]) + float(thetas[1]) * normalized_km
+	#estimated_price = predict_(np.array(normalized_km).reshape(-1, 1), thetas) 
+	print(f"estimated price for km: {km} is {estimated_price}.")
+	estimated_price = denormalization(estimated_price, data_min[-1], data_max[-1])
+	print(f"estimated price for km: {km} is {estimated_price}.")
+
+	# Plot the scatter and prediction line
+	#plot_scatter_with_prediction(data, x_test, y_pred, feature, target)
+	plot_scatter_with_prediction(data, denormalized_x_test, denormalized_y_pred, feature, target)
