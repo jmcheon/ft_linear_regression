@@ -23,7 +23,7 @@ def denormalization(normalized_data, data_min, data_max):
 	denormalized_data = normalized_data * (data_max - data_min) + data_min
 	return denormalized_data
 
-def fit_(x, y, thetas, alpha, max_iter):
+def fit_(x, y, thetas, alpha):
 	for v in [x, y, thetas]:
 		if not isinstance(v, np.ndarray):
 			print(f"Invalid input: argument {v} of ndarray type required")
@@ -53,20 +53,26 @@ def fit_(x, y, thetas, alpha, max_iter):
 		print(f"Invalid input: argument alpha of positive float type required")	
 		return False
 
-	if not isinstance(max_iter, int) or max_iter <= 0:
-		print(f"Invalid input: argument max_iter of positive integer type required")	
-		return False 
-
 	# Weights to update: alpha * mean((y_hat - y) * x) 
 	# Bias to update: alpha * mean(y_hat - y)
 	X = np.hstack((np.ones((x.shape[0], 1)), x))
 	new_theta = np.copy(thetas.astype("float64"))
-	for _ in range(max_iter):
+	new_mse = 0.0
+	i = 0
+	while True:
+	#for _ in range(max_iter):
 		y_hat = X.dot(new_theta)
 		# Compute gradient descent
 		b_grad = np.mean(y_hat - y)
 		w_grad = np.mean((y_hat - y) * x)
 		grad = np.array([b_grad, w_grad]).reshape(-1, 1)
+		mse = np.sum(np.square(y_hat - y)) / len(y)
+		gain = mse - new_mse
+		i += 1
+		#print("mse:", mse, "new:", new_mse, "i:", i)
+		if gain == 0:
+			break
+		new_mse = mse
 	        # Handle invalid values in the gradient
 		if np.any(np.isnan(grad)) or np.any(np.isinf(grad)):
 			#print("Warning: Invalid values encountered in the gradient. Skipping update.")
@@ -81,7 +87,7 @@ def train(data):
 	thetas = np.zeros((2, 1))
 	x = data[:, 0]
 	y = data[:, 1]
-	new_thetas = fit_(x.reshape(-1, 1), y.reshape(-1, 1), thetas, alpha=1e-2, max_iter=5000)
+	new_thetas = fit_(x.reshape(-1, 1), y.reshape(-1, 1), thetas, alpha=3e-1)
 	print("thetas(original):", thetas)
 	print("thetas(optimized):", new_thetas)
 	return new_thetas
@@ -98,7 +104,7 @@ def train_model():
 
 	print(f"Starting training for linear regression...")
 	thetas = np.zeros((2, 1))
-	new_thetas = fit_(x.reshape(-1, 1), y.reshape(-1, 1), thetas, alpha=1e-2, max_iter=5000)
+	new_thetas = fit_(x.reshape(-1, 1), y.reshape(-1, 1), thetas, alpha=3e-1)
 	print("thetas(original):", thetas, thetas.shape)
 	print("thetas(optimized):", new_thetas, new_thetas.shape)
 

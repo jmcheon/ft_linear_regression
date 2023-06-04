@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import imageio
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import r2_score
 from fit import train_model, fit_, load_data, normalization, denormalization
 from prediction import predict_
 
@@ -50,7 +51,7 @@ def create_animated_gif(data, feature, target, num_steps, filename='scatter_regr
 		partial_y = normalized_data[:i, 1].reshape(-1, 1)
 		thetas = np.zeros((2, 1)).reshape(-1, 1)
 
-		new_thetas = fit_(partial_x, partial_y, thetas, alpha=1e-2, max_iter=5000)
+		new_thetas = fit_(partial_x, partial_y, thetas, alpha=3e-1)
 		y_pred = predict_(partial_x, new_thetas)
 
 		denormalized_partial_x = denormalization(partial_x.reshape(-1 ,1), data_min[0], data_max[0])
@@ -68,10 +69,21 @@ def create_animated_gif(data, feature, target, num_steps, filename='scatter_regr
 	imageio.mimsave(filename, images, duration=0.5)
 	return new_thetas
 
-def r2_score(data, thetas):
-	x = data[:, 0]
-	y = data[:, 1]
-	ssm = np.sum(y - np.average(y))
+def r2_score_(data, thetas):
+	#print(f"thetas: {thetas}")
+	x = data[:, 0].reshape(-1, 1)
+	y = data[:, 1].reshape(-1, 1)
+	X = np.hstack((np.ones((x.shape[0], 1)), x))
+
+	y_pred = X.dot(thetas).reshape(-1, 1)
+	y_mean = np.mean(y)
+
+	ssr = np.sum((y - y_pred) ** 2)
+	sst = np.sum((y - y_mean) ** 2)
+
+	r2_score_value = 1 - (ssr / sst)
+	#print(r2_score(data[:, 1], y_pred))
+	return r2_score_value
 
 if __name__ == "__main__":
 	# Load the data
@@ -96,4 +108,5 @@ if __name__ == "__main__":
 	# Plot the scatter and prediction line
 	plt = plot_scatter_with_prediction(data, x_test, y_pred, feature, target)
 	plt.show()
-	create_animated_gif(data, feature, target, num_steps=len(data[:, 0]))
+	print(f"R2 score: {r2_score_(data, thetas):.2f}")
+	#create_animated_gif(data, feature, target, num_steps=len(data[:, 0]))

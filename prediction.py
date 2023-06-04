@@ -32,4 +32,4 @@ if __name__ == "__main__":
 		estimated_price = int(predict_(np.array(float(km)).reshape(-1, 1), thetas))
 		print(f"Estimated price for km: {km} is {estimated_price}.")
 	else:
-		print(f"Invalid input: {km}, integer value required.")
+		print(f"Invalid input: {km}, positive integer value required.")
