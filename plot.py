@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score
-from fit import train_model, fit_, load_data, normalization, denormalization
-from prediction import predict_
+from fit import train_model, fit_, load_data, normalization, denormalization, denormalize_thetas
+from predict import predict_
 
 def plot_scatter(data, feature, target):
 	plt.scatter(data[:, 0], data[:, 1])
@@ -52,13 +51,12 @@ def create_animated_gif(data, feature, target, num_steps, filename='scatter_regr
 		thetas = np.zeros((2, 1)).reshape(-1, 1)
 
 		new_thetas = fit_(partial_x, partial_y, thetas, alpha=3e-1)
-		y_pred = predict_(partial_x, new_thetas)
-
+		denormalized_thetas = denormalize_thetas(new_thetas, data_max, data_min)
 		denormalized_partial_x = denormalization(partial_x.reshape(-1 ,1), data_min[0], data_max[0])
-		denormalized_y_pred = denormalization(y_pred.reshape(-1, 1), data_min[-1], data_max[-1])
+		denormalized_y_pred = predict_(denormalized_partial_x, denormalized_thetas)
 
 		fig = plot_scatter_with_prediction(data, denormalized_partial_x, denormalized_y_pred, feature, target)
-		plt.title(f'theta:{new_thetas}')
+		plt.title(f'theta:{denormalized_thetas}')
 		
 		# Call save to create temporary image file.
 		temp_img_file = f'temp_{i}.png'
@@ -95,18 +93,19 @@ if __name__ == "__main__":
 	denormalized_data = denormalization(normalized_data, data_min, data_max)
 
 	# Plot data scatters 
-	#plot_scatter(data, feature, target)
-	#plot_scatters_for_normalization(data, normalized_data, denormalized_data, feature, target)
+	# plot_scatter(data, feature, target)
+	# plot_scatters_for_normalization(data, normalized_data, denormalized_data, feature, target)
 
 	# Train the model on training set
 	thetas = train_model()
+	print(f"denormalized thetas: {thetas}, {thetas.shape}")
 
-	# Predict on test set
-	x_train, x_test, y_train, y_test = train_test_split(data[:, 0], data[:, 1], test_size=0.2, random_state=42)
-	y_pred = predict_(x_test.reshape(-1, 1), thetas)
+	# Predict
+	y_pred = predict_(data[:, 0].reshape(-1, 1), thetas)
 
 	# Plot the scatter and prediction line
-	plt = plot_scatter_with_prediction(data, x_test, y_pred, feature, target)
+	plt = plot_scatter_with_prediction(data, data[:, 0], y_pred, feature, target)
 	plt.show()
+
 	print(f"R2 score: {r2_score_(data, thetas):.2f}")
-	#create_animated_gif(data, feature, target, num_steps=len(data[:, 0]))
+	create_animated_gif(data, feature, target, num_steps=len(data[:, 0]))

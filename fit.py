@@ -23,6 +23,14 @@ def denormalization(normalized_data, data_min, data_max):
 	denormalized_data = normalized_data * (data_max - data_min) + data_min
 	return denormalized_data
 
+def denormalize_thetas(thetas, data_max, data_min):
+	# Recover the slope of the line
+	slope = thetas[1] * (data_max[1] - data_min[1]) / (data_max[0] - data_min[0])
+	# Recover the intercept of the line
+	intercept = thetas[0] * (data_max[1] - data_min[1]) + data_min[1] - slope * data_min[0]
+	denormalized_thetas = np.array([intercept, slope]).reshape(-1, 1)
+	return denormalized_thetas
+
 def fit_(x, y, thetas, alpha):
 	for v in [x, y, thetas]:
 		if not isinstance(v, np.ndarray):
@@ -60,7 +68,6 @@ def fit_(x, y, thetas, alpha):
 	new_mse = 0.0
 	i = 0
 	while True:
-	#for _ in range(max_iter):
 		y_hat = X.dot(new_theta)
 		# Compute gradient descent
 		b_grad = np.mean(y_hat - y)
@@ -108,12 +115,7 @@ def train_model():
 	print("thetas(original):", thetas, thetas.shape)
 	print("thetas(optimized):", new_thetas, new_thetas.shape)
 
-	# Recover the slope of the line
-	slope = new_thetas[1] * (data_max[1] - data_min[1]) / (data_max[0] - data_min[0])
-	# Recover the intercept of the line
-	intercept = new_thetas[0] * (data_max[1] - data_min[1]) + data_min[1] - slope * data_min[0]
-	denormalized_thetas = np.array([intercept, slope]).reshape(-1, 1)
-	return denormalized_thetas
+	return denormalize_thetas(new_thetas, data_max, data_min)
 
 if __name__ == "__main__":
 	# Load the data
