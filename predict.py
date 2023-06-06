@@ -1,5 +1,5 @@
 import numpy as np
-from fit import train_model
+from train import train_model
 
 def predict_(x, thetas):
 	for v in [x, thetas]:

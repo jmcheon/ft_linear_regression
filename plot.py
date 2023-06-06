@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import imageio
 from sklearn.metrics import r2_score
-from fit import train_model, fit_, load_data, normalization, denormalization, denormalize_thetas
+from train import train_model, fit_, load_data, normalization, denormalization, denormalize_thetas
 from predict import predict_
 
 def plot_scatter(data, feature, target):
