@@ -1,13 +1,14 @@
 import numpy as np
 import pandas as pd
+import sys
 
-def load_data():
+def load_data(path):
 	try:
-		data = pd.read_csv("data.csv")
+		data = pd.read_csv(path)
 	except:
 		print("Invalid file error.")
 		sys.exit()
-	print("data shape:", data.shape)
+	#print("data shape:", data.shape)
 	columns = data.columns.tolist()
 
 	return (data.values, columns[0], columns[1])
@@ -61,8 +62,8 @@ def fit_(x, y, thetas, alpha):
 		print(f"Invalid input: argument alpha of positive float type required")	
 		return False
 
-	# Weights to update: alpha * mean((y_hat - y) * x) 
-	# Bias to update: alpha * mean(y_hat - y)
+	# Weights(theta1) to update: alpha * mean((y_hat - y) * x) 
+	# Bias(theta0) to update: alpha * mean(y_hat - y)
 	X = np.hstack((np.ones((x.shape[0], 1)), x))
 	new_theta = np.copy(thetas.astype("float64"))
 	new_mse = 0.0
@@ -70,9 +71,9 @@ def fit_(x, y, thetas, alpha):
 	while True:
 		y_hat = X.dot(new_theta)
 		# Compute gradient descent
-		b_grad = np.mean(y_hat - y)
-		w_grad = np.mean((y_hat - y) * x)
-		grad = np.array([b_grad, w_grad]).reshape(-1, 1)
+		theta0 = np.mean(y_hat - y)
+		theta1 = np.mean((y_hat - y) * x)
+		grad = np.array([theta0, theta1]).reshape(-1, 1)
 		mse = np.sum(np.square(y_hat - y)) / len(y)
 		gain = mse - new_mse
 		i += 1
@@ -101,7 +102,7 @@ def train(data):
 
 def train_model():
 	# Load the data
-	data, feature, target = load_data()
+	data, feature, target = load_data("data.csv")
 
 	# Normalization
 	data, data_min, data_max = normalization(data)
@@ -115,14 +116,17 @@ def train_model():
 	print("thetas(original):", thetas, thetas.shape)
 	print("thetas(optimized):", new_thetas, new_thetas.shape)
 
+	df = pd.DataFrame(denormalize_thetas(new_thetas, data_max, data_min))
+	df.to_csv('model.csv', index=False)
 	return denormalize_thetas(new_thetas, data_max, data_min)
 
 if __name__ == "__main__":
 	# Load the data
-	data, feature, target = load_data()
+	#data, feature, target = load_data("data.csv")
 
 	# Normalization
-	normalized_data, data_min, data_max = normalization(data)
+	#normalized_data, data_min, data_max = normalization(data)
 
 	# Train the model on training set
-	thetas = train(normalized_data)
+	#thetas = train(normalized_data)
+	thetas = train_model()

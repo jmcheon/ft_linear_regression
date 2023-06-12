@@ -1,8 +1,8 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
-import imageio
-from sklearn.metrics import r2_score
-from train import train_model, fit_, load_data, normalization, denormalization, denormalize_thetas
+import imageio, sys
+from train import fit_, load_data, normalization, denormalization, denormalize_thetas
 from predict import predict_
 
 def plot_scatter(data, feature, target):
@@ -67,25 +67,9 @@ def create_animated_gif(data, feature, target, num_steps, filename='scatter_regr
 	imageio.mimsave(filename, images, duration=0.5)
 	return new_thetas
 
-def r2_score_(data, thetas):
-	#print(f"thetas: {thetas}")
-	x = data[:, 0].reshape(-1, 1)
-	y = data[:, 1].reshape(-1, 1)
-	X = np.hstack((np.ones((x.shape[0], 1)), x))
-
-	y_pred = X.dot(thetas).reshape(-1, 1)
-	y_mean = np.mean(y)
-
-	ssr = np.sum((y - y_pred) ** 2)
-	sst = np.sum((y - y_mean) ** 2)
-
-	r2_score_value = 1 - (ssr / sst)
-	#print(r2_score(data[:, 1], y_pred))
-	return r2_score_value
-
 if __name__ == "__main__":
 	# Load the data
-	data, feature, target = load_data()
+	data, feature, target = load_data("data.csv")
 
 	# Normalization
 	normalized_data, data_min, data_max = normalization(data)
@@ -93,11 +77,15 @@ if __name__ == "__main__":
 	denormalized_data = denormalization(normalized_data, data_min, data_max)
 
 	# Plot data scatters 
-	# plot_scatter(data, feature, target)
+	plot_scatter(data, feature, target)
 	# plot_scatters_for_normalization(data, normalized_data, denormalized_data, feature, target)
 
-	# Train the model on training set
-	thetas = train_model()
+	# Load the thetas 
+	try:
+		thetas = pd.read_csv('model.csv').values
+	except:
+		print("Invalid file error.")
+		sys.exit()
 	print(f"denormalized thetas: {thetas}, {thetas.shape}")
 
 	# Predict
@@ -107,5 +95,4 @@ if __name__ == "__main__":
 	plt = plot_scatter_with_prediction(data, data[:, 0], y_pred, feature, target)
 	plt.show()
 
-	print(f"R2 score: {r2_score_(data, thetas):.2f}")
 	create_animated_gif(data, feature, target, num_steps=len(data[:, 0]))

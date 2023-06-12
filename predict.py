@@ -1,5 +1,5 @@
 import numpy as np
-from train import train_model
+import pandas as pd
 
 def predict_(x, thetas):
 	for v in [x, thetas]:
@@ -14,7 +14,7 @@ def predict_(x, thetas):
 	if thetas.ndim == 1 and thetas.size == x.shape[1] + 1:
 		thetas = thetas.reshape(x.shape[1] + 1, 1)
 	elif not (thetas.ndim == 2 and thetas.shape == (x.shape[1] + 1, 1)):
-		print(f"p Invalid input: wrong shape of {thetas}", thetas.shape)
+		print(f"Invalid input: wrong shape of {thetas}", thetas.shape)
 		return None
 	
 	X = np.hstack((np.ones((x.shape[0], 1)), x))
@@ -22,12 +22,13 @@ def predict_(x, thetas):
 	return np.array(y_hat)
 
 if __name__ == "__main__":
-	# Train the model
-	thetas = train_model()
-	print(f"denormalized thetas: {thetas}, {thetas.shape}")
-
 	# Predict
 	km = input("\nType a Km to estimate price: ")
+	try:
+		thetas = pd.read_csv('model.csv').values
+		#print(f"denormalized thetas: {thetas}, {thetas.shape}")
+	except:
+		thetas = np.zeros((2, 1))
 	if km.isdigit():
 		estimated_price = int(predict_(np.array(float(km)).reshape(-1, 1), thetas))
 		print(f"Estimated price for km: {km} is {estimated_price}.")
