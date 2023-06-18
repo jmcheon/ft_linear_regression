@@ -71,9 +71,9 @@ def fit_(x, y, thetas, alpha):
 	while True:
 		y_hat = X.dot(new_theta)
 		# Compute gradient descent
-		theta0 = np.mean(y_hat - y)
-		theta1 = np.mean((y_hat - y) * x)
-		grad = np.array([theta0, theta1]).reshape(-1, 1)
+		b_grad = np.mean(y_hat - y)
+		w_grad = np.mean((y_hat - y) * x)
+		grad = np.array([b_grad, w_grad]).reshape(-1, 1)
 		mse = np.sum(np.square(y_hat - y)) / len(y)
 		gain = mse - new_mse
 		i += 1
