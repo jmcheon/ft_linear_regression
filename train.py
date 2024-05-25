@@ -81,7 +81,7 @@ def fit_(x, y, thetas, alpha):
 		if gain == 0:
 			break
 		new_mse = mse
-	        # Handle invalid values in the gradient
+        # Handle invalid values in the gradient
 		if np.any(np.isnan(grad)) or np.any(np.isinf(grad)):
 			#print("Warning: Invalid values encountered in the gradient. Skipping update.")
 			continue

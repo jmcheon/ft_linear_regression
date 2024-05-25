@@ -30,7 +30,7 @@ if __name__ == "__main__":
 	except:
 		thetas = np.zeros((2, 1))
 	if km.isdigit():
-		estimated_price = int(predict_(np.array(float(km)).reshape(-1, 1), thetas))
+		estimated_price = int(predict_(np.array(float(km)).reshape(-1, 1), thetas)[0][0])
 		print(f"Estimated price for km: {km} is {estimated_price}.")
 	else:
 		print(f"Invalid input: {km}, positive integer value required.")

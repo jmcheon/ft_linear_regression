@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import imageio, sys
+import sys
+import imageio.v2 as imageio
 from train import fit_, load_data, normalization, denormalization, denormalize_thetas
 from predict import predict_
 
